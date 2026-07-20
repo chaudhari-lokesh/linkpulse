@@ -1,0 +1,21 @@
+{
+  "name": "linkpulse-backend",
+  "version": "1.0.0",
+  "description": "LinkPulse REST API Backend Server",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "better-sqlite3": "^11.8.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "nanoid": "^3.3.8",
+    "pg": "^8.16.0",
+    "qrcode": "^1.5.4"
+  }
+}
