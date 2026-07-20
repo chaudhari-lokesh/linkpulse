@@ -1,0 +1,47 @@
+<%- include('partials/header') %>
+
+<div style="max-width: 440px; margin: 3rem auto 4rem;">
+    <div class="glass-card">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div style="font-size: 2.5rem; color: var(--primary); margin-bottom: 0.5rem;">
+                <i class="fa-solid fa-user-lock"></i>
+            </div>
+            <h2 style="font-size: 1.8rem; font-weight: 800;">Welcome Back</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Log in to access your LinkPulse dashboard</p>
+        </div>
+
+        <% if (locals.error) { %>
+            <div class="alert alert-danger">
+                <i class="fa-solid fa-triangle-exclamation"></i> <%= error %>
+            </div>
+        <% } %>
+
+        <% if (locals.success) { %>
+            <div class="alert alert-success">
+                <i class="fa-solid fa-circle-check"></i> <%= success %>
+            </div>
+        <% } %>
+
+        <form action="/user/login" method="POST">
+            <div class="form-group">
+                <label class="form-label" for="loginEmail">Email Address</label>
+                <input type="email" id="loginEmail" name="email" class="form-control" placeholder="you@example.com" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" name="password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 0.85rem;">
+                <i class="fa-solid fa-right-to-bracket"></i> Log In
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 1.75rem; font-size: 0.9rem; color: var(--text-muted);">
+            Don't have an account? <a href="/signup" style="font-weight: 600;">Sign up here</a>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>

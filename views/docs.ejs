@@ -1,0 +1,70 @@
+<%- include('partials/header') %>
+
+<div style="max-width: 850px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 3rem;">
+        <div class="hero-badge">
+            <i class="fa-solid fa-code"></i> Developer API
+        </div>
+        <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.75rem;">LinkPulse REST API</h1>
+        <p style="color: var(--text-muted); font-size: 1.05rem;">Integrate LinkPulse URL shortening and analytics into your own web applications.</p>
+    </div>
+
+    <!-- API Endpoint 1 -->
+    <div class="glass-card" style="margin-bottom: 2rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+            <span class="badge badge-success" style="font-size: 0.9rem; padding: 0.35rem 0.8rem;">POST</span>
+            <code style="font-size: 1.1rem; color: var(--text-main); font-weight: 700;">/url</code>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.25rem;">Generates a new short URL for a given destination URL.</p>
+
+        <h4 style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Request Headers</h4>
+        <pre style="background: rgba(15, 23, 42, 0.8); padding: 1rem; border-radius: var(--radius-md); color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 1.25rem; overflow-x: auto;">
+Content-Type: application/json
+Accept: application/json</pre>
+
+        <h4 style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">JSON Request Body</h4>
+        <pre style="background: rgba(15, 23, 42, 0.8); padding: 1rem; border-radius: var(--radius-md); color: #f9fafb; font-size: 0.85rem; margin-bottom: 1.25rem; overflow-x: auto;">
+{
+  "url": "https://example.com/my-long-page",
+  "customAlias": "my-brand-slug",   // optional
+  "title": "Campaign Link",          // optional
+  "expiration": "7d"                 // optional ("24h", "7d", "30d")
+}</pre>
+
+        <h4 style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">JSON Response (201 Created)</h4>
+        <pre style="background: rgba(15, 23, 42, 0.8); padding: 1rem; border-radius: var(--radius-md); color: var(--success); font-size: 0.85rem; overflow-x: auto;">
+{
+  "success": true,
+  "shortId": "my-brand-slug",
+  "shortUrl": "http://localhost:8001/url/my-brand-slug",
+  "qrCode": "data:image/png;base64,...",
+  "redirectUrl": "https://example.com/my-long-page"
+}</pre>
+    </div>
+
+    <!-- API Endpoint 2 -->
+    <div class="glass-card" style="margin-bottom: 2rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+            <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: var(--primary); font-size: 0.9rem; padding: 0.35rem 0.8rem;">GET</span>
+            <code style="font-size: 1.1rem; color: var(--text-main); font-weight: 700;">/url/analytics/:shortId</code>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.25rem;">Fetches real-time click metrics and visit logs for a shortened link.</p>
+
+        <h4 style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Sample Response</h4>
+        <pre style="background: rgba(15, 23, 42, 0.8); padding: 1rem; border-radius: var(--radius-md); color: var(--success); font-size: 0.85rem; overflow-x: auto;">
+{
+  "totalClicks": 12,
+  "title": "Campaign Link",
+  "redirectUrl": "https://example.com/my-long-page",
+  "analytics": [
+    {
+      "timestamp": 1720000000000,
+      "ip": "127.0.0.1",
+      "referrer": "Direct"
+    }
+  ]
+}</pre>
+    </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,145 @@
+<%- include('partials/header') %>
+
+<div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <a href="/dashboard" class="btn btn-secondary btn-sm" style="margin-bottom: 1rem;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+        </a>
+        <h1 style="font-size: 2rem; font-weight: 800;"><%= url.title %> Analytics</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem; word-break: break-all;">
+            Destination: <a href="<%= url.redirectUrl %>" target="_blank"><%= url.redirectUrl %></a>
+        </p>
+    </div>
+
+    <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-secondary btn-sm" onclick="copyToClipboard('<%= url.fullShortUrl %>', 'Short URL copied!')">
+            <i class="fa-solid fa-copy"></i> Copy Short Link
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="openQrModal('<%= url.qrCode %>', '<%= url.title %>', '<%= url.fullShortUrl %>')">
+            <i class="fa-solid fa-qrcode"></i> QR Code
+        </button>
+    </div>
+</div>
+
+<!-- Key Stat Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon" style="color: var(--success); background: rgba(16, 185, 129, 0.15);"><i class="fa-solid fa-chart-line"></i></div>
+        <div>
+            <div class="stat-value"><%= url.clickCount %></div>
+            <div class="stat-label">Total Link Engagements</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-calendar-days"></i></div>
+        <div>
+            <div class="stat-value" style="font-size: 1.2rem;"><%= new Date(url.createdAt).toLocaleDateString() %></div>
+            <div class="stat-label">Creation Date</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="color: var(--accent-cyan); background: rgba(6, 182, 212, 0.15);"><i class="fa-solid fa-clock-history"></i></div>
+        <div>
+            <div class="stat-value" style="font-size: 1.2rem;">
+                <%= url.expiresAt ? new Date(url.expiresAt).toLocaleDateString() : 'Never' %>
+            </div>
+            <div class="stat-label">Expiration Status</div>
+        </div>
+    </div>
+</div>
+
+<!-- Traffic Chart -->
+<div class="glass-card" style="margin-bottom: 2.5rem;">
+    <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1.5rem;">
+        <i class="fa-solid fa-chart-area" style="color: var(--primary);"></i> Click Traffic Over Time
+    </h3>
+    <div style="position: relative; height: 300px; width: 100%;">
+        <canvas id="clicksChart"></canvas>
+    </div>
+</div>
+
+<!-- Detailed Visit Logs Table -->
+<h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1rem;">Recent Click Logs</h3>
+<div class="table-responsive">
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Timestamp</th>
+                <th>IP Address</th>
+                <th>Referrer</th>
+                <th>User Agent</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (url.visitHistory && url.visitHistory.length > 0) { %>
+                <% url.visitHistory.slice().reverse().forEach((visit, index) => { %>
+                    <tr>
+                        <td><strong><%= url.visitHistory.length - index %></strong></td>
+                        <td><%= new Date(visit.timestamp).toLocaleString() %></td>
+                        <td><span class="badge badge-secondary"><%= visit.ip || 'Anonymous' %></span></td>
+                        <td><%= visit.referrer || 'Direct' %></td>
+                        <td style="font-size: 0.8rem; color: var(--text-muted); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <%= visit.userAgent || 'Unknown' %>
+                        </td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
+                        No clicks registered yet for this short URL. Share your link to collect insights!
+                    </td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+</div>
+
+<!-- Load Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const clicksData = <%- JSON.stringify(url.clicksByDate) %>;
+        const labels = Object.keys(clicksData);
+        const values = Object.values(clicksData);
+
+        const ctx = document.getElementById('clicksChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels.length > 0 ? labels : ['Today'],
+                datasets: [{
+                    label: 'Clicks',
+                    data: values.length > 0 ? values : [0],
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                    fill: true,
+                    tension: 0.35,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#a855f7',
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#9ca3af' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#9ca3af', stepSize: 1 }
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+<%- include('partials/footer') %>
