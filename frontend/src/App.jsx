@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component } from 'react';
 
 // API Base URL Configuration (sanitizes VITE_API_BASE in production on Vercel)
 const getApiBase = () => {
   const envBase = (import.meta.env.VITE_API_BASE || '').trim();
   if (!envBase) return '/api';
-  const cleanBase = envBase.replace(/\/+$/, ''); // Remove trailing slashes
+  const cleanBase = envBase.replace(/\/+$/, '');
   return cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
 };
 
@@ -17,17 +17,58 @@ const parseError = (errVal, defaultMsg = 'An error occurred') => {
   return String(errVal);
 };
 
+// React Error Boundary to prevent blank pages
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("LinkPulse UI Error Boundary caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '3rem', textAlign: 'center', color: '#fff' }}>
+          <div className="glass-card" style={{ maxWidth: '500px', margin: '0 auto', border: '1px solid var(--error)' }}>
+            <h2 style={{ color: 'var(--error)', marginBottom: '1rem' }}>Something went wrong</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+              {parseError(this.state.error, 'An unexpected UI error occurred.')}
+            </p>
+            <button className="btn btn-primary" onClick={() => window.location.reload()}>
+              <i className="fa-solid fa-rotate-right"></i> Reload Application
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
-  const [currentPage, setCurrentPage] = useState('home'); // 'home', 'dashboard', 'login', 'signup', 'analytics', 'docs'
+  return (
+    <ErrorBoundary>
+      <MainApp />
+    </ErrorBoundary>
+  );
+}
+
+function MainApp() {
+  const [currentPage, setCurrentPage] = useState('home');
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   
-  // App States
   const [toast, setToast] = useState(null);
   const [analyticsShortId, setAnalyticsShortId] = useState(null);
   const [activeQrModal, setActiveQrModal] = useState(null);
 
-  // Auto-check authentication
   useEffect(() => {
     fetchCurrentUser();
   }, [token]);
@@ -42,8 +83,9 @@ export default function App() {
       const res = await fetch(`${API_BASE}/user/me`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
+      if (!res.ok) return setUser(null);
       const data = await res.json();
-      if (data.user) {
+      if (data && data.user) {
         setUser(data.user);
       } else {
         setUser(null);
@@ -71,7 +113,6 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* Toast Alert */}
       {toast && (
         <div id="toast-container">
           <div className="toast" style={{ borderLeftColor: toast.type === 'success' ? 'var(--success)' : 'var(--primary)' }}>
@@ -80,7 +121,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Navigation Header */}
       <nav className="navbar">
         <div className="brand" onClick={() => setCurrentPage('home')}>
           <i className="fa-solid fa-bolt brand-icon"></i>
@@ -117,7 +157,6 @@ export default function App() {
         </div>
       </nav>
 
-      {/* Main Container Pages */}
       <div className="container">
         {currentPage === 'home' && <HomePage token={token} user={user} showToast={showToast} setCurrentPage={setCurrentPage} setAnalyticsShortId={setAnalyticsShortId} setActiveQrModal={setActiveQrModal} />}
         {currentPage === 'dashboard' && <DashboardPage token={token} user={user} showToast={showToast} setCurrentPage={setCurrentPage} setAnalyticsShortId={setAnalyticsShortId} setActiveQrModal={setActiveQrModal} copyToClipboard={copyToClipboard} />}
@@ -127,7 +166,6 @@ export default function App() {
         {currentPage === 'docs' && <DocsPage />}
       </div>
 
-      {/* QR Code Modal */}
       {activeQrModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div className="glass-card" style={{ maxWidth: '400px', width: '90%', textAlign: 'center', position: 'relative' }}>
@@ -146,7 +184,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Footer */}
       <footer>
         <p>&copy; {new Date().getFullYear()} <strong>LinkPulse</strong>. Decoupled REST API + React Single Page Architecture.</p>
       </footer>
@@ -178,7 +215,16 @@ function HomePage({ token, user, showToast, setCurrentPage, setAnalyticsShortId,
         },
         body: JSON.stringify({ url, customAlias, title, expiration })
       });
-      const data = await res.json();
+
+      let data;
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        data = { error: `Backend server error (${res.status}). Server might be spinning up.` };
+      }
+
       if (!res.ok) {
         setError(parseError(data.error, 'Failed to shorten URL'));
       } else {
@@ -186,7 +232,8 @@ function HomePage({ token, user, showToast, setCurrentPage, setAnalyticsShortId,
         showToast('Short link created successfully!', 'success');
       }
     } catch (err) {
-      setError('Network error. Is the backend server running?');
+      console.error("Shorten URL error:", err);
+      setError('Network error. Is the backend server running on Render?');
     } finally {
       setLoading(false);
     }
@@ -206,7 +253,7 @@ function HomePage({ token, user, showToast, setCurrentPage, setAnalyticsShortId,
         </p>
       </div>
 
-      {error && <div className="alert alert-danger"><i className="fa-solid fa-triangle-exclamation"></i> {error}</div>}
+      {error && <div className="alert alert-danger"><i className="fa-solid fa-triangle-exclamation"></i> {parseError(error)}</div>}
 
       <div className="glass-card" style={{ marginBottom: '3rem' }}>
         <form onSubmit={handleSubmit}>
@@ -289,7 +336,6 @@ function DashboardPage({ token, user, showToast, setCurrentPage, setAnalyticsSho
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  // Quick form
   const [url, setUrl] = useState('');
   const [customAlias, setCustomAlias] = useState('');
 
@@ -303,8 +349,8 @@ function DashboardPage({ token, user, showToast, setCurrentPage, setAnalyticsSho
       const res = await fetch(`${API_BASE}/url/my-links`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const result = await res.json();
       if (res.ok) {
+        const result = await res.json();
         setData(result);
       }
     } catch (err) {
@@ -332,7 +378,7 @@ function DashboardPage({ token, user, showToast, setCurrentPage, setAnalyticsSho
         fetchDashboard();
       } else {
         const errData = await res.json();
-        showToast(errData.error || 'Failed', 'error');
+        showToast(parseError(errData.error, 'Failed to shorten'), 'error');
       }
     } catch (err) {
       showToast('Server error', 'error');
@@ -355,10 +401,10 @@ function DashboardPage({ token, user, showToast, setCurrentPage, setAnalyticsSho
     }
   };
 
-  const filteredUrls = data.urls.filter(u => 
-    u.title.toLowerCase().includes(search.toLowerCase()) || 
-    u.redirectUrl.toLowerCase().includes(search.toLowerCase()) ||
-    u.shortId.toLowerCase().includes(search.toLowerCase())
+  const filteredUrls = (data.urls || []).filter(u => 
+    (u.title || '').toLowerCase().includes(search.toLowerCase()) || 
+    (u.redirectUrl || '').toLowerCase().includes(search.toLowerCase()) ||
+    (u.shortId || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -372,23 +418,23 @@ function DashboardPage({ token, user, showToast, setCurrentPage, setAnalyticsSho
 
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon"><i class="fa-solid fa-link"></i></div>
+          <div className="stat-icon"><i className="fa-solid fa-link"></i></div>
           <div>
-            <div className="stat-value">{data.stats.totalLinks}</div>
+            <div className="stat-value">{data.stats?.totalLinks || 0}</div>
             <div className="stat-label">Total Short Links</div>
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-icon" style={{ color: 'var(--secondary)', background: 'rgba(168, 85, 247, 0.15)' }}><i className="fa-solid fa-mouse-pointer"></i></div>
           <div>
-            <div className="stat-value">{data.stats.totalClicks}</div>
+            <div className="stat-value">{data.stats?.totalClicks || 0}</div>
             <div className="stat-label">Total Clicks</div>
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-icon" style={{ color: 'var(--accent-cyan)', background: 'rgba(6, 182, 212, 0.15)' }}><i className="fa-solid fa-circle-check"></i></div>
           <div>
-            <div className="stat-value">{data.stats.activeLinks}</div>
+            <div className="stat-value">{data.stats?.activeLinks || 0}</div>
             <div className="stat-label">Active Links</div>
           </div>
         </div>
@@ -468,7 +514,7 @@ function LoginPage({ setToken, setUser, setCurrentPage, showToast }) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Login failed');
+        setError(parseError(data.error, 'Login failed'));
       } else {
         localStorage.setItem('token', data.token);
         setToken(data.token);
@@ -490,7 +536,7 @@ function LoginPage({ setToken, setUser, setCurrentPage, showToast }) {
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Log in to access your LinkPulse dashboard</p>
         </div>
 
-        {error && <div className="alert alert-danger"><i className="fa-solid fa-triangle-exclamation"></i> {error}</div>}
+        {error && <div className="alert alert-danger"><i className="fa-solid fa-triangle-exclamation"></i> {parseError(error)}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -526,7 +572,7 @@ function SignupPage({ setToken, setUser, setCurrentPage, showToast }) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Signup failed');
+        setError(parseError(data.error, 'Signup failed'));
       } else {
         localStorage.setItem('token', data.token);
         setToken(data.token);
@@ -547,7 +593,7 @@ function SignupPage({ setToken, setUser, setCurrentPage, showToast }) {
           <h2>Create Free Account</h2>
         </div>
 
-        {error && <div className="alert alert-danger"><i className="fa-solid fa-triangle-exclamation"></i> {error}</div>}
+        {error && <div className="alert alert-danger"><i className="fa-solid fa-triangle-exclamation"></i> {parseError(error)}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
