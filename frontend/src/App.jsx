@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
-// API Base URL Configuration
-const API_BASE = '/api';
+// API Base URL Configuration (uses VITE_API_BASE in production on Vercel)
+const API_BASE = import.meta.env.VITE_API_BASE || '/api';
+
+const parseError = (errVal, defaultMsg = 'An error occurred') => {
+  if (!errVal) return defaultMsg;
+  if (typeof errVal === 'string') return errVal;
+  if (typeof errVal === 'object') return errVal.message || JSON.stringify(errVal);
+  return String(errVal);
+};
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home'); // 'home', 'dashboard', 'login', 'signup', 'analytics', 'docs'
@@ -166,7 +173,7 @@ function HomePage({ token, user, showToast, setCurrentPage, setAnalyticsShortId,
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Failed to shorten URL');
+        setError(parseError(data.error, 'Failed to shorten URL'));
       } else {
         setResult(data);
         showToast('Short link created successfully!', 'success');
