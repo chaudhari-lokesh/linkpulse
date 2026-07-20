@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
-// API Base URL Configuration (uses VITE_API_BASE in production on Vercel)
-const API_BASE = import.meta.env.VITE_API_BASE || '/api';
+// API Base URL Configuration (sanitizes VITE_API_BASE in production on Vercel)
+const getApiBase = () => {
+  const envBase = (import.meta.env.VITE_API_BASE || '').trim();
+  if (!envBase) return '/api';
+  const cleanBase = envBase.replace(/\/+$/, ''); // Remove trailing slashes
+  return cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
+};
+
+const API_BASE = getApiBase();
 
 const parseError = (errVal, defaultMsg = 'An error occurred') => {
   if (!errVal) return defaultMsg;

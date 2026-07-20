@@ -14,9 +14,10 @@ const PORT = process.env.PORT || 5000;
 
 // CORS configuration for decoupled frontend
 app.use(cors({
-    origin: process.env.FRONTEND_URL || true,
+    origin: (origin, callback) => callback(null, true),
     credentials: true
 }));
+app.options('*', cors());
 
 // Body Parsers & Cookie Parser
 app.use(express.json());
